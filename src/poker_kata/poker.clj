@@ -29,33 +29,41 @@
   (println "Inspect:" v)
   v)
 
+(defn- highs [card-freq-map]
+  (->> (sort-by val #(compare %2 %1) card-freq-map)
+       (map first)))
+
 (defn valuate-four-card [hand]
-  ; (inspect hand)
-  (let [card-freq (->> (map #(:value %) hand)
-                       (frequencies)
-                       (inspect))]
-    (if (= 4 (apply max (map val card-freq)))
+  (let [card-freq-map (->> (map #(:value %) hand)
+                           (frequencies))
+        card-freq     (map val card-freq-map)]
+    (if (= 4 (apply max card-freq))
       {:power :fourcard
-       :highs (->> (sort-by val #(compare %2 %1) card-freq)
-                   (map first))}
+       :highs (highs card-freq-map)}
       nil)))
 
 
-(defn is-fullhouse [hand]
-  (let [card-freq (->> (map #(:value %) hand)
-                       (frequencies)
-                       (map val))]
-    (and (some #{3} card-freq) (some #{2} card-freq))))
+(defn valuate-fullhouse [hand]
+  (let [card-freq-map (->> (map #(:value %) hand)
+                           (frequencies))
+        card-freq     (map val card-freq-map)]
+    (if (and (some #{3} card-freq) (some #{2} card-freq))
+      {:power :fullhouse
+       :highs (highs card-freq-map)}
+      nil)))
+
+(defn valuate-highcard [hand]
+  :high)
+
+(defn- apply-if-not-nil [val f & args]
+  (if (nil? val)
+    (apply f args)
+    val))
 
 (defn hand-power [hand]
-  (let [fourcard (valuate-four-card hand)]
-    (cond
-      (not (nil? fourcard)) fourcard
-      :else :high)))
-  ; (cond
-  ;   (is-four-card hand) :fourcard
-  ;   (is-fullhouse hand) :fullhouse
-  ;   :else :high))
+  (-> (apply-if-not-nil nil valuate-four-card hand)
+      (apply-if-not-nil valuate-fullhouse hand)
+      (apply-if-not-nil valuate-highcard hand)))
 
 
 (defn compare-poker-hand [first-hand second-hand]
@@ -64,8 +72,13 @@
     true))
 
 
+(defmacro def- [item value]
+  `(def ^{:private true} ~item ~value))
+
+
 (comment
   (parse-int "xx")
+  (macroexpand `(def- x 1))
   (ext "10S" 0 (- 3 1))
   (hand-str-to-map "AS")
   (let [hand [{:value 3, :suit :h} {:value 3, :suit :s} {:value 3, :suit :d} {:value 3, :suit :c} {:value 7, :suit :c}]]
