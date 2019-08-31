@@ -10,15 +10,21 @@
 ;------------ Utils to transform string to card object
 
 (defn card-value-number [val]
-  (case (string/lower-case val)
-    "a" 14
-    "j" 11
-    "q" 12
-    "k" 13
-    (parse-int val)))
+  (let [card-value-map {"a" 14
+                        "j" 11
+                        "q" 12
+                        "k" 13}]
+    (-> (get card-value-map (string/lower-case val))
+        (or (parse-int val)))))
+
+(defn find-first [pred coll]
+  (some #(when (pred %) %) coll))
+
+(defn butlast-str [str]
+  (clojure.string/join (butlast str)))
 
 (defn extract-card [card]
-  [(subs card 0 (- (count card) 1))
+  [(butlast-str card)
    (last card)])
 
 (defn card-str-to-map [card]
@@ -42,7 +48,7 @@
       :else false)))
 
 (defn- highs [card-freq-map]
-  (->> (sort-by (fn [x] x) cmp-freq card-freq-map)
+  (->> (sort-by identity cmp-freq card-freq-map)
        (map first)))
 
 ;------------ Valuators
@@ -55,16 +61,16 @@
      :highs (->> (map :value hand)
                  (sort >))}))
 
-(defn- is-vals-straight [hand-vals-sorted]
+(defn- vals-straight? [hand-vals-sorted]
   (loop [current-hand-vals (rest hand-vals-sorted)
-         current-val (first hand-vals-sorted)
+         current-val       (first hand-vals-sorted)
          is-straight true]
     (cond
-      (not is-straight) false
-      (zero?            (count current-hand-vals)) is-straight
-      :else             (and is-straight
-                          (= current-val (+ (first current-hand-vals) 1))
-                          (recur (rest current-hand-vals) (first current-hand-vals) is-straight)))))
+      (not is-straight)   false
+      (zero?              (count current-hand-vals)) is-straight
+      :else               (and is-straight
+                            (= current-val (+ (first current-hand-vals) 1))
+                            (recur (rest current-hand-vals) (first current-hand-vals) is-straight)))))
 
 
 
@@ -74,14 +80,14 @@
                                       (replace {14 1})
                                       (sort >))]
     (cond
-      (is-vals-straight card-vals-list)            {:power :straight, :highs card-vals-list}
-      (is-vals-straight card-vals-list-ace-first)  {:power :straight, :highs card-vals-list-ace-first}
-      :else                                         nil)))
+      (vals-straight? card-vals-list)            {:power :straight, :highs card-vals-list}
+      (vals-straight? card-vals-list-ace-first)  {:power :straight, :highs card-vals-list-ace-first}
+      :else                                      nil)))
 
 (defn- valuate-straight-flush [hand]
   (let [straight-res (valuate-straight hand)
         flush-res   (valuate-flush hand)]
-    (if (and (not (nil? straight-res)) (not (nil? flush-res)))
+    (if (and (not-empty straight-res) (not-empty flush-res))
       {:power :straight-flush
        :highs (:highs flush-res)}
       nil)))
@@ -166,18 +172,17 @@
         :two-pairs
         :pair
         :high]
-      (map-indexed #(vector %2 %1))
-      (flatten)
-      (apply hash-map)))
+      (map-indexed #(-> [%2 %1]))
+      (into (hash-map))))
 
 (defn- compare-high [high1 high2]
-  (loop [high1 high1
-         high2 high2]
-    (cond
-      (= 0 (count high1)) :draw
-      (> (first high1) (first high2)) :win
-      (< (first high1) (first high2)) :lose
-      :else (recur (rest high1) (rest high2)))))
+  (let [cmp-result (->> (map - high1 high2)
+                        (find-first #(not (zero? %))))]
+    ; This is super funny way to use condp. I obviously misunderstand something
+    (condp apply (list cmp-result)
+      nil?  :draw
+      pos?  :win
+      neg?  :lose)))
 
 (defn- compare-hand-power [power1 power2]
   (let [[rank1 rank2] [((:power power1) power-ranking-map) ((:power power2) power-ranking-map)]]
@@ -192,3 +197,9 @@
   (let [first-hand-power  (hand-power (map card-str-to-map first-hand))
         second-hand-power (hand-power (map card-str-to-map second-hand))]
     (compare-hand-power first-hand-power second-hand-power)))
+
+(comment
+  (->> (map - [1 1] [1 0])
+       (find-first #(not (zero? %))))
+
+  (clojure.string/join ["a" "a" "a"]))
