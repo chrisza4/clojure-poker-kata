@@ -1,44 +1,23 @@
 # poker-kata
 
-FIXME: description
+[Poker kata](http://codingdojo.org/kata/PokerHands/?fbclid=IwAR0dkl82jQEAyqWctS-Oa8ZorX9MIqdDCyt4JOCtE_mQS9n3FVburTIAPUw) written in Clojure.
+
+## Prerequiste
+
+Install [Clojure](https://clojure.org/guides/getting_started) and [Leiningen](https://leiningen.org/)
 
 ## Installation
 
-Download from http://example.com/FIXME.
+```
+lein deps
+```
 
-## Usage
+## Testing kata
 
-FIXME: explanation
+Kata was tested in `poker_test.clj`
 
-    $ java -jar poker-kata-0.1.0-standalone.jar [args]
+```
+lein test
+```
 
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
-
-## License
-
-Copyright © 2019 FIXME
-
-This program and the accompanying materials are made available under the
-terms of the Eclipse Public License 2.0 which is available at
-http://www.eclipse.org/legal/epl-2.0.
-
-This Source Code may also be made available under the following Secondary
-Licenses when the conditions for such availability set forth in the Eclipse
-Public License, v. 2.0 are satisfied: GNU General Public License as published by
-the Free Software Foundation, either version 2 of the License, or (at your
-option) any later version, with the GNU Classpath Exception which is available
-at https://www.gnu.org/software/classpath/license.html.
+If you are refactoring, it would be easier to use `lein auto test`, which will automatically run tests when you save file
