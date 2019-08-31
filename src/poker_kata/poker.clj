@@ -7,6 +7,8 @@
        nil nil
        (Integer. int-str))))
 
+;------------ Utils to transform string to card object
+
 (defn card-value-number [val]
   (case (string/lower-case val)
     "a" 14
@@ -25,18 +27,27 @@
      :suit  (-> (string/lower-case card-suit)
                 (keyword))}))
 
-(defn inspect [v]
+(defn- inspect [v]
   (println "Inspect:" v)
   v)
 
-(defn- sort-by-desc [func val]
-  (sort-by func #(compare %2 %1) val))
+;------------ Some utilities to create a high set from freqeuencies map
+(defn- cmp-freq [v1 v2]
+  (let [[key1 val1] [(key v1) (val v1)]
+        [key2 val2] [(key v2) (val v2)]]
+    (cond
+      (> val1 val2) true
+      (< val1 val2) false
+      (> key1 key2) true
+      :else false)))
 
 (defn- highs [card-freq-map]
-  (->> (sort-by-desc val card-freq-map)
+  (->> (sort-by (fn [x] x) cmp-freq card-freq-map)
        (map first)))
 
-(defn valuate-four-card [hand]
+;------------ Valuators
+
+(defn- valuate-four-card [hand]
   (let [card-freq-map (->> (map :value hand)
                            (frequencies))
         card-freq     (map val card-freq-map)]
@@ -45,7 +56,7 @@
        :highs (highs card-freq-map)}
       nil)))
 
-(defn valuate-flush [hand]
+(defn- valuate-flush [hand]
   (if (= 1 (-> (map :suit hand)
                (distinct)
                (count)))
@@ -53,41 +64,79 @@
      :highs (->> (map :value hand)
                  (sort >))}))
 
-(defn is-vals-straight [hand]
-  (loop [current-hand (rest hand)
-         current-val (first hand)
+(defn- is-vals-straight [hand-vals-sorted]
+  (loop [current-hand-vals (rest hand-vals-sorted)
+         current-val (first hand-vals-sorted)
          is-straight true]
     (cond
       (not is-straight) false
-      (zero?            (count current-hand)) is-straight
+      (zero?            (count current-hand-vals)) is-straight
       :else             (and is-straight
-                          (= current-val (+ (first current-hand) 1))
-                          (recur (rest current-hand) (first current-hand) is-straight)))))
+                          (= current-val (+ (first current-hand-vals) 1))
+                          (recur (rest current-hand-vals) (first current-hand-vals) is-straight)))))
 
 
 
-(defn valuate-straight [hand]
-  (let [card-value-list           (->> (map :value hand) (sort >))
-        card-value-list-ace-first (->> (map :value hand)
-                                       (replace {14 1})
-                                       (sort >))]
+(defn- valuate-straight [hand]
+  (let [card-vals-list           (->> (map :value hand) (sort >))
+        card-vals-list-ace-first (->> (map :value hand)
+                                      (replace {14 1})
+                                      (sort >))]
     (cond
-      (is-vals-straight card-value-list)            {:power :straight, :highs card-value-list}
-      (is-vals-straight card-value-list-ace-first)  {:power :straight, :highs card-value-list-ace-first}
+      (is-vals-straight card-vals-list)            {:power :straight, :highs card-vals-list}
+      (is-vals-straight card-vals-list-ace-first)  {:power :straight, :highs card-vals-list-ace-first}
       :else                                         nil)))
 
+(defn- valuate-straight-flush [hand]
+  (let [straight-res (valuate-straight hand)
+        flush-res   (valuate-flush hand)]
+    (if (and (not (nil? straight-res)) (not (nil? flush-res)))
+      {:power :straight-flush
+       :highs (:highs flush-res)}
+      nil)))
 
-(defn valuate-fullhouse [hand]
+(defn- is-card-set [card-set card-freq-map]
+  (let [card-freq-sorted (sort (map val card-freq-map))]
+    (= card-set card-freq-sorted)))
+
+(defn- valuate-fullhouse [hand]
   (let [card-freq-map (->> (map :value hand)
-                           (frequencies))
-        card-freq     (map val card-freq-map)]
-    (if (and (some #{3} card-freq) (some #{2} card-freq))
+                           (frequencies))]
+    (if (is-card-set [2 3] card-freq-map)
       {:power :fullhouse
        :highs (highs card-freq-map)}
       nil)))
 
-(defn valuate-highcard [hand]
-  :high)
+(defn- valuate-three [hand]
+  (let [card-freq-map (->> (map :value hand)
+                           (frequencies))]
+    (if (is-card-set [1 1 3] card-freq-map)
+      {:power :three
+       :highs (highs card-freq-map)}
+      nil)))
+
+(defn- valuate-two-pairs [hand]
+  (let [card-freq-map (->> (map :value hand)
+                           (frequencies))]
+    (if (is-card-set [1 2 2] card-freq-map)
+      {:power :two-pairs
+       :highs (highs card-freq-map)}
+      nil)))
+
+(defn- valuate-a-pair [hand]
+  (let [card-freq-map (->> (map :value hand)
+                           (frequencies))]
+    (if (is-card-set [1 1 1 2] card-freq-map)
+      {:power :pair
+       :highs (highs card-freq-map)}
+      nil)))
+
+(defn- valuate-highcard [hand]
+  (let [card-freq-map (->> (map :value hand)
+                           (frequencies))]
+    {:power :high, :highs (highs card-freq-map)}))
+
+;-------------- Valuate whole hand
 
 (defn- apply-if-not-nil [val f & args]
   (if (nil? val)
@@ -95,28 +144,55 @@
     val))
 
 (defn hand-power [hand]
-  (-> (apply-if-not-nil nil valuate-four-card hand)
+  (-> nil
+      (apply-if-not-nil valuate-straight-flush hand)
+      (apply-if-not-nil valuate-four-card hand)
       (apply-if-not-nil valuate-fullhouse hand)
       (apply-if-not-nil valuate-flush hand)
       (apply-if-not-nil valuate-straight hand)
+      (apply-if-not-nil valuate-three hand)
+      (apply-if-not-nil valuate-two-pairs hand)
+      (apply-if-not-nil valuate-a-pair hand)
       (apply-if-not-nil valuate-highcard hand)))
 
+; ----------------- Valuator result comparison
+
+(def power-ranking-map
+  (->> [:straight-flush
+        :fourcard
+        :fullhouse
+        :flush
+        :straight
+        :three
+        :two-pairs
+        :pair
+        :high]
+      (map-indexed #(vector %2 %1))
+      (flatten)
+      (apply hash-map)))
+
+(defn- compare-high [high1 high2]
+  (loop [high1 high1
+         high2 high2]
+    (cond
+      (= 0 (count high1)) :draw
+      (> (first high1) (first high2)) :win
+      (< (first high1) (first high2)) :lose
+      :else (recur (rest high1) (rest high2)))))
+
+(defn- compare-hand-power [power1 power2]
+  (let [[rank1 rank2] [((:power power1) power-ranking-map) ((:power power2) power-ranking-map)]]
+    (cond
+      (< rank1 rank2) :win
+      (> rank1 rank2) :lose
+      :else (compare-high (:highs power1) (:highs power2)))))
+
+; ----------------------------- Main function
 
 (defn compare-poker-hand [first-hand second-hand]
-  (let [first-hand  (map card-str-to-map first-hand)
-        second-hand (map card-str-to-map second-hand)]
-    true))
+  (let [first-hand-power  (-> (hand-power (map card-str-to-map first-hand)))
+        second-hand-power (-> (hand-power (map card-str-to-map second-hand)))]
+    (compare-hand-power first-hand-power second-hand-power)))
 
-
-(defmacro def- [item value]
-  `(def ^{:private true} ~item ~value))
-
-
-(comment
-  (parse-int "xx")
-  (macroexpand `(def- x 1))
-  (ext "10S" 0 (- 3 1))
-  (hand-str-to-map "AS")
-  (sort > [1 3 4 8 3 4])
-  (let [hand [{:value 3, :suit :h} {:value 3, :suit :s} {:value 3, :suit :d} {:value 3, :suit :c} {:value 7, :suit :c}]]
-    (valuate-four-card hand)))
+(def p {:power :fullhouse, :highs '(4 2)})
+((:power p) power-ranking-map)

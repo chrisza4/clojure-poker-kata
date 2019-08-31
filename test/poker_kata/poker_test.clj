@@ -10,19 +10,6 @@
 ;       (is (= (compare-poker-hand fullhouse-hand flush-hand) :win))
 ;       (is (= (compare-poker-hand fullhouse-hand fullhouse-hand) :draw)))))
 
-(def- four-card-hand
-  [{:value 3 :suit :h}
-   {:value 3 :suit :s}
-   {:value 3 :suit :d}
-   {:value 3 :suit :c}
-   {:value 7 :suit :c}])
-
-(def- full-house-hand
-  [{:value 3 :suit :h}
-   {:value 3 :suit :s}
-   {:value 3 :suit :d}
-   {:value 7 :suit :c}
-   {:value 7 :suit :c}])
 (deftest hand-power-test
   (let [four-card       [{:value 3 :suit :h}
                          {:value 3 :suit :s}
@@ -53,11 +40,42 @@
                          {:value 3 :suit :s}
                          {:value 3 :suit :d}
                          {:value 7 :suit :c}
+                         {:value 7 :suit :c}]
+        three           [{:value 3 :suit :h}
+                         {:value 3 :suit :s}
+                         {:value 3 :suit :d}
+                         {:value 9 :suit :c}
+                         {:value 7 :suit :c}]
+        two-pair        [{:value 3 :suit :h}
+                         {:value 3 :suit :s}
+                         {:value 9 :suit :d}
+                         {:value 9 :suit :c}
+                         {:value 7 :suit :c}]
+        pair            [{:value 3 :suit :h}
+                         {:value 3 :suit :s}
+                         {:value 8 :suit :d}
+                         {:value 9 :suit :c}
+                         {:value 7 :suit :c}]
+        high            [{:value 3 :suit :h}
+                         {:value 13 :suit :s}
+                         {:value 8 :suit :d}
+                         {:value 9 :suit :c}
                          {:value 7 :suit :c}]]
 
     (is (= (hand-power four-card) {:power :fourcard, :highs [3 7]}))
     (is (= (hand-power full-house) {:power :fullhouse, :highs [3 7]}))
     (is (= (hand-power flush) {:power :flush, :highs [14, 13, 11, 10, 3]}))
     (is (= (hand-power straight) {:power :straight, :highs [14 13 12 11 10]}))
-    (is (= (hand-power straight-2) {:power :straight, :highs [5 4 3 2 1]}))))
-    ; (is (= (hand-power straight-flush) {:power :fullhouse, :highs [14 13 12 11 10]}))))
+    (is (= (hand-power straight-2) {:power :straight, :highs [5 4 3 2 1]}))
+    (is (= (hand-power straight-flush) {:power :straight-flush, :highs [14 13 12 11 10]}))
+    (is (= (hand-power three) {:power :three, :highs [3 9 7]}))
+    (is (= (hand-power two-pair) {:power :two-pairs, :highs [9 3 7]}))
+    (is (= (hand-power pair) {:power :pair, :highs [3 9 8 7]}))
+    (is (= (hand-power high) {:power :high, :highs [13 9 8 7 3]}))))
+
+(deftest compare-poker-hand-test
+  (testing "Some cases"
+    (is (= (compare-poker-hand ["2H" "3D" "5S" "9C" "KD"] ["2C" "3H" "4S" "8C" "AH"]) :lose))
+    (is (= (compare-poker-hand ["2H" "4S" "4C" "2D" "4H"] ["2S" "8S" "AS" "QS" "3S"]) :win))
+    (is (= (compare-poker-hand ["2H" "3D" "5S" "9C" "KD"] ["2C" "3H" "4S" "8C" "KH"]) :win))
+    (is (= (compare-poker-hand ["2H" "3D" "5S" "9C" "KD"] ["2D" "3H" "5C" "9S" "KH"]) :draw))))
