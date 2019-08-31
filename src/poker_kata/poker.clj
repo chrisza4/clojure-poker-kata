@@ -47,15 +47,6 @@
 
 ;------------ Valuators
 
-(defn- valuate-four-card [hand]
-  (let [card-freq-map (->> (map :value hand)
-                           (frequencies))
-        card-freq     (map val card-freq-map)]
-    (if (= 4 (apply max card-freq))
-      {:power :fourcard
-       :highs (highs card-freq-map)}
-      nil)))
-
 (defn- valuate-flush [hand]
   (if (= 1 (-> (map :suit hand)
                (distinct)
@@ -98,6 +89,14 @@
 (defn- is-card-set [card-set card-freq-map]
   (let [card-freq-sorted (sort (map val card-freq-map))]
     (= card-set card-freq-sorted)))
+
+(defn- valuate-four-card [hand]
+  (let [card-freq-map (->> (map :value hand)
+                           (frequencies))]
+    (if (is-card-set [1 4] card-freq-map)
+      {:power :fourcard
+       :highs (highs card-freq-map)}
+      nil)))
 
 (defn- valuate-fullhouse [hand]
   (let [card-freq-map (->> (map :value hand)
