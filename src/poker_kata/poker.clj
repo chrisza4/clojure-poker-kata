@@ -197,9 +197,3 @@
   (let [first-hand-power  (hand-power (map card-str-to-map first-hand))
         second-hand-power (hand-power (map card-str-to-map second-hand))]
     (compare-hand-power first-hand-power second-hand-power)))
-
-(comment
-  (->> (map - [1 1] [1 0])
-       (find-first #(not (zero? %))))
-
-  (clojure.string/join ["a" "a" "a"]))
