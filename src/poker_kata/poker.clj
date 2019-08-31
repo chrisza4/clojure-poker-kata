@@ -193,6 +193,3 @@
   (let [first-hand-power  (-> (hand-power (map card-str-to-map first-hand)))
         second-hand-power (-> (hand-power (map card-str-to-map second-hand)))]
     (compare-hand-power first-hand-power second-hand-power)))
-
-(def p {:power :fullhouse, :highs '(4 2)})
-((:power p) power-ranking-map)
