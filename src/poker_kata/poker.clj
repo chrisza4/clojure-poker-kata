@@ -14,8 +14,7 @@
                         "j" 11
                         "q" 12
                         "k" 13}]
-    (-> (get card-value-map (string/lower-case val))
-        (or (parse-int val)))))
+    (card-value-map (string/lower-case val) (parse-int val))))
 
 (defn find-first [pred coll]
   (some #(when (pred %) %) coll))
