@@ -88,7 +88,7 @@
         flush-res   (valuate-flush hand)]
     (if (and (not-empty straight-res) (not-empty flush-res))
       {:power :straight-flush
-       :highs (:highs flush-res)}
+       :highs (:highs straight-res)}
       nil)))
 
 (defn- is-card-set [card-set card-freq-map]

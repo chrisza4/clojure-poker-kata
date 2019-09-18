@@ -21,6 +21,11 @@
                          {:value 12 :suit :s}
                          {:value 13 :suit :s}
                          {:value 14 :suit :s}]
+        straight-flush-2  [{:value 2 :suit :s}
+                           {:value 3 :suit :s}
+                           {:value 4 :suit :s}
+                           {:value 5 :suit :s}
+                           {:value 14 :suit :s}]
         straight        [{:value 10 :suit :s}
                          {:value 11 :suit :d}
                          {:value 12 :suit :d}
@@ -68,6 +73,7 @@
     (is (= (hand-power straight) {:power :straight, :highs [14 13 12 11 10]}))
     (is (= (hand-power straight-2) {:power :straight, :highs [5 4 3 2 1]}))
     (is (= (hand-power straight-flush) {:power :straight-flush, :highs [14 13 12 11 10]}))
+    (is (= (hand-power straight-flush-2) {:power :straight-flush, :highs [5 4 3 2 1]}))
     (is (= (hand-power three) {:power :three, :highs [3 9 7]}))
     (is (= (hand-power two-pair) {:power :two-pairs, :highs [9 3 7]}))
     (is (= (hand-power pair) {:power :pair, :highs [3 9 8 7]}))
