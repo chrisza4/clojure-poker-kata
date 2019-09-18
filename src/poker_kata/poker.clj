@@ -142,22 +142,22 @@
 
 ;-------------- Valuate whole hand
 
-(defn- apply-if-not-nil [val f & args]
+(defn- apply-if-nil [val f & args]
   (if (nil? val)
     (apply f args)
     val))
 
 (defn hand-power [hand]
   (-> nil
-      (apply-if-not-nil valuate-straight-flush hand)
-      (apply-if-not-nil valuate-four-card hand)
-      (apply-if-not-nil valuate-fullhouse hand)
-      (apply-if-not-nil valuate-flush hand)
-      (apply-if-not-nil valuate-straight hand)
-      (apply-if-not-nil valuate-three hand)
-      (apply-if-not-nil valuate-two-pairs hand)
-      (apply-if-not-nil valuate-a-pair hand)
-      (apply-if-not-nil valuate-highcard hand)))
+      (apply-if-nil valuate-straight-flush hand)
+      (apply-if-nil valuate-four-card hand)
+      (apply-if-nil valuate-fullhouse hand)
+      (apply-if-nil valuate-flush hand)
+      (apply-if-nil valuate-straight hand)
+      (apply-if-nil valuate-three hand)
+      (apply-if-nil valuate-two-pairs hand)
+      (apply-if-nil valuate-a-pair hand)
+      (apply-if-nil valuate-highcard hand)))
 
 ; ----------------- Valuator result comparison
 
