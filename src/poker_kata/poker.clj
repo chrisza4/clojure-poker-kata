@@ -174,15 +174,17 @@
       (map-indexed #(-> [%2 %1]))
       (into (hash-map))))
 
+; high, high -> :draw/:win/:lose
 (defn- compare-high [high1 high2]
   (let [cmp-result (->> (map - high1 high2)
                         (find-first #(not (zero? %))))]
     ; This is super funny way to use condp. I obviously misunderstand something
-    (condp apply (list cmp-result)
-      nil?  :draw
-      pos?  :win
-      neg?  :lose)))
+    (cond
+      (nil? cmp-result) :draw
+      (pos? cmp-result) :win
+      (neg? cmp-result) :lose)))
 
+; power, power -> :draw/:win/:lose
 (defn- compare-hand-power [power1 power2]
   (let [[rank1 rank2] [((:power power1) power-ranking-map) ((:power power2) power-ranking-map)]]
     (cond
