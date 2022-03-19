@@ -1,54 +1,8 @@
 (ns poker-kata.poker
-  (:require [clojure.string :as string]))
-
-(defn parse-int [s]
-   (let [int-str (re-find  #"\d+" s)]
-     (case int-str
-       nil nil
-       (Integer. int-str))))
-
-;------------ Utils to transform string to card object
-
-(defn card-value-number [val]
-  (let [card-value-map {"a" 14
-                        "j" 11
-                        "q" 12
-                        "k" 13}]
-    (card-value-map (string/lower-case val) (parse-int val))))
-
-(defn find-first [pred coll]
-  (some #(when (pred %) %) coll))
-
-(defn butlast-str [str]
-  (clojure.string/join (butlast str)))
-
-(defn extract-card [card]
-  [(butlast-str card)
-   (last card)])
-
-(defn card-str-to-map [card]
-  (let [[card-value card-suit] (extract-card card)]
-    {:value (card-value-number card-value)
-     :suit  (-> (string/lower-case card-suit)
-                (keyword))}))
-
-(defn- inspect [v]
-  (println "Inspect:" v)
-  v)
-
-;------------ Some utilities to create a high set from freqeuencies map
-(defn- cmp-freq [v1 v2]
-  (let [[key1 val1] [(key v1) (val v1)]
-        [key2 val2] [(key v2) (val v2)]]
-    (cond
-      (> val1 val2) true
-      (< val1 val2) false
-      (> key1 key2) true
-      :else false)))
-
-(defn- highs [card-freq-map]
-  (->> (sort-by identity cmp-freq card-freq-map)
-       (map first)))
+  (:require [clojure.string :as string]
+            [poker-kata.utils :as utils]
+            [poker-kata.card :as card]
+            [clojure.spec.alpha :as s]))
 
 ;------------ Valuators
 
@@ -68,10 +22,8 @@
       (not is-straight)   false
       (zero?              (count current-hand-vals)) is-straight
       :else               (and is-straight
-                            (= current-val (+ (first current-hand-vals) 1))
-                            (recur (rest current-hand-vals) (first current-hand-vals) is-straight)))))
-
-
+                               (= current-val (+ (first current-hand-vals) 1))
+                               (recur (rest current-hand-vals) (first current-hand-vals) is-straight)))))
 
 (defn- valuate-straight [hand]
   (let [card-vals-list           (->> (map :value hand) (sort >))
@@ -100,7 +52,7 @@
                            (frequencies))]
     (if (is-card-set [1 4] card-freq-map)
       {:power :fourcard
-       :highs (highs card-freq-map)}
+       :highs (card/highs card-freq-map)}
       nil)))
 
 (defn- valuate-fullhouse [hand]
@@ -108,7 +60,7 @@
                            (frequencies))]
     (if (is-card-set [2 3] card-freq-map)
       {:power :fullhouse
-       :highs (highs card-freq-map)}
+       :highs (card/highs card-freq-map)}
       nil)))
 
 (defn- valuate-three [hand]
@@ -116,7 +68,7 @@
                            (frequencies))]
     (if (is-card-set [1 1 3] card-freq-map)
       {:power :three
-       :highs (highs card-freq-map)}
+       :highs (card/highs card-freq-map)}
       nil)))
 
 (defn- valuate-two-pairs [hand]
@@ -124,7 +76,7 @@
                            (frequencies))]
     (if (is-card-set [1 2 2] card-freq-map)
       {:power :two-pairs
-       :highs (highs card-freq-map)}
+       :highs (card/highs card-freq-map)}
       nil)))
 
 (defn- valuate-a-pair [hand]
@@ -132,13 +84,13 @@
                            (frequencies))]
     (if (is-card-set [1 1 1 2] card-freq-map)
       {:power :pair
-       :highs (highs card-freq-map)}
+       :highs (card/highs card-freq-map)}
       nil)))
 
 (defn- valuate-highcard [hand]
   (let [card-freq-map (->> (map :value hand)
                            (frequencies))]
-    {:power :high, :highs (highs card-freq-map)}))
+    {:power :high, :highs (card/highs card-freq-map)}))
 
 ;-------------- Valuate whole hand
 
@@ -171,13 +123,13 @@
         :two-pairs
         :pair
         :high]
-      (map-indexed #(-> [%2 %1]))
-      (into (hash-map))))
+       (map-indexed #(-> [%2 %1]))
+       (into (hash-map))))
 
 ; high, high -> :draw/:win/:lose
 (defn- compare-high [high1 high2]
   (let [cmp-result (->> (map - high1 high2)
-                        (find-first #(not (zero? %))))]
+                        (utils/find-first #(not (zero? %))))]
     ; This is super funny way to use condp. I obviously misunderstand something
     (cond
       (nil? cmp-result) :draw
@@ -195,6 +147,6 @@
 ; ----------------------------- Main function
 
 (defn compare-poker-hand [first-hand second-hand]
-  (let [first-hand-power  (hand-power (map card-str-to-map first-hand))
-        second-hand-power (hand-power (map card-str-to-map second-hand))]
+  (let [first-hand-power  (hand-power (map card/card-str-to-map first-hand))
+        second-hand-power (hand-power (map card/card-str-to-map second-hand))]
     (compare-hand-power first-hand-power second-hand-power)))
